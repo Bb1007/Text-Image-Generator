@@ -1,29 +1,32 @@
 import streamlit as st
-from diffusers import StableDiffusionPipeline
 import torch
-import os
+from diffusers import StableDiffusionPipeline
+from PIL import Image
+import io
 
-# Sidebar token & model config
-HF_TOKEN = os.getenv("HF_TOKEN")
-model_id = "runwayml/stable-diffusion-v1-5"
+st.set_page_config(page_title="🖼️ Text to Image Generator", layout="centered")
+st.title("🧠 Hugging Face Text → Image")
 
-# Cache the pipeline init (only once!)
-@st.cache_resource(show_spinner=False)
-def load_model():
+huggingface_token = st.secrets["HUGGINGFACE_TOKEN"]
+
+@st.cache_resource
+def load_pipeline():
     return StableDiffusionPipeline.from_pretrained(
-        model_id,
+        "CompVis/stable-diffusion-v1-4",
         torch_dtype=torch.float16,
-        use_auth_token=HF_TOKEN
+        use_auth_token=huggingface_token,
+        revision="fp16"
     ).to("cuda" if torch.cuda.is_available() else "cpu")
 
-st.set_page_config(page_title="AI Image Gen", layout="wide")
-st.title("🖼️ Text‑to‑Image Generator")
+pipe = load_pipeline()
 
-prompt = st.text_input("Enter your prompt:", "")
-if st.button("Generate"):
-    pipe = load_model()
-    with st.spinner("Generating…"):
-        img = pipe(prompt).images[0]
-    st.image(img, caption=prompt, use_column_width=True)
-    img.save("output.png")
-    st.download_button("Download Image", data=open("output.png","rb"), file_name="output.png", mime="image/png")
+prompt = st.text_input("Enter your prompt:")
+if st.button("Generate") and prompt:
+    with st.spinner("Generating image..."):
+        image = pipe(prompt).images[0]
+        st.image(image, caption="Generated Image", use_column_width=True)
+
+        img_byte_arr = io.BytesIO()
+        image.save(img_byte_arr, format='PNG')
+        st.download_button("📥 Download", data=img_byte_arr.getvalue(), file_name="image.png", mime="image/png")
+
