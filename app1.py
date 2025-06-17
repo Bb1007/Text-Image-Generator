@@ -18,8 +18,14 @@ def query(payload):
 if st.button("Generate Image") and prompt:
     with st.spinner("Generating..."):
         image_bytes = query({"inputs": prompt})
-        image = Image.open(BytesIO(image_bytes))
-        st.image(image, caption="Generated Image", use_column_width=True)
-        st.download_button("📥 Download Image", image_bytes, file_name="generated.png")
+
+        try:
+            image = Image.open(BytesIO(image_bytes))
+            st.image(image, caption="Generated Image", use_column_width=True)
+            st.download_button("📥 Download Image", image_bytes, file_name="generated.png")
+        except Exception as e:
+            st.error("🛑 Failed to generate image. Possible reasons: model loading, bad token, or blocked prompt.")
+            st.write("RAW RESPONSE:")
+            st.code(image_bytes[:500])
 
 
