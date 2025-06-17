@@ -5,7 +5,6 @@ import os
 
 # Sidebar token & model config
 HF_TOKEN = os.getenv("HF_TOKEN")
-#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 
 model_id = "runwayml/stable-diffusion-v1-5"
 
 # Cache the pipeline init (only once!)
