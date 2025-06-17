@@ -1,31 +1,45 @@
 import streamlit as st
-import requests
+from huggingface_hub import InferenceClient
 from PIL import Image
-from io import BytesIO
+import io
+import os
 
-st.set_page_config(page_title="Text-to-Image Generator")
-st.title("🎨 AI Image Generator with Hugging Face")
-st.write("Type a prompt and generate an image using Stable Diffusion!")
+st.set_page_config(page_title="🖼️ Text-to-Image Generator", layout="centered")
+st.title("🧠 Hugging Face Text-to-Image Generator")
 
-prompt = st.text_input("Enter your prompt:")
+# Input Prompt
+prompt = st.text_input("Enter your prompt", value="A magical forest with glowing animals")
 
-def query(payload):
-    API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2"
-    headers = {"Authorization": f"Bearer {st.secrets['HUGGINGFACE_TOKEN']}"}
-    response = requests.post(API_URL, headers=headers, json=payload)
-    return response.content
+# Model Selection (Optional)
+model_id = "stabilityai/stable-diffusion-3"
 
-if st.button("Generate Image") and prompt:
-    with st.spinner("Generating..."):
-        image_bytes = query({"inputs": prompt})
-
+# Generate Button
+if st.button("🎨 Generate Image") and prompt:
+    with st.spinner("Generating image..."):
         try:
-            image = Image.open(BytesIO(image_bytes))
+            # Load HF token from secrets
+            HF_TOKEN = st.secrets["HF_TOKEN"]
+
+            # Init client
+            client = InferenceClient(token=HF_TOKEN)
+
+            # Generate image
+            image = client.text_to_image(prompt=prompt, model=model_id)
+
+            # Display
             st.image(image, caption="Generated Image", use_column_width=True)
-            st.download_button("📥 Download Image", image_bytes, file_name="generated.png")
+
+            # Download
+            buf = io.BytesIO()
+            image.save(buf, format="PNG")
+            st.download_button(
+                label="📥 Download Image",
+                data=buf.getvalue(),
+                file_name="image.png",
+                mime="image/png"
+            )
+
         except Exception as e:
-            st.error("🛑 Failed to generate image. Possible reasons: model loading, bad token, or blocked prompt.")
-            st.write("RAW RESPONSE:")
-            st.code(image_bytes[:500])
+            st.error(f"🛑 Failed: {e}")
 
 
