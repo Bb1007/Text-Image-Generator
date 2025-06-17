@@ -1,0 +1,5 @@
+-q diffusers 
+transformers 
+torch 
+streamlit 
+huggingface-hub
